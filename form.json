@@ -1,0 +1,182 @@
+{
+  "#protocol": "协议层面的配置，对整个配置中的一些东西进行规定、约束",
+  "protocol": {
+    "type": [
+      {
+        "name": "book",
+        "def": {
+          "name": "string",
+          "price": "float:2"
+        }
+      },
+      {
+        "#Dog": "大写开头，必须是一个被实现的类的实例，这里强制规定Dog的部分属性",
+        "name": "Dog",
+        "def": {
+          "name": "string"
+        }
+      },
+      {
+        "name": "user",
+        "def": {
+          "uid": "number",
+          "username": "string",
+          "policies": "dict"
+        }
+      }
+    ],
+    "#preload": "规定在表单加载之前要做哪些事情",
+    "preload": [
+      {
+        "#": "第一步，从url抓取数据",
+        "type": "fetch",
+        "url": "/xxx",
+        "#as": "将结果作为data这个变量保存",
+        "as": "data"
+      },
+      {
+        "#": "第二步，抓取用户信息，因为不依赖第一步的结果，所以和第一步同步进行",
+        "type": "fetch",
+        "url": "/user",
+        "as": "user"
+      },
+      {
+        "#": "第三步，将第一步得到的data restore到模型中",
+        "type": "restore",
+        "$": "data"
+      },
+      {
+        "#": "第四步，将第二步中得到的user set到模型上，注意，模型上必须声明user",
+        "type": "set",
+        "user": "user"
+      }
+    ]
+  },
+
+  "#model": "模型的配置",
+  "model": {
+    "user": {
+      "type": "user",
+      "default": {}
+    },
+    "name": {
+      "type": "string",
+      "default": ""
+    },
+    "age": {
+      "type": "number",
+      "default": 10
+    },
+    "books": {
+      "type": "Book",
+      "default": [],
+      "validators": [
+        {
+          "#$": "this表示当前model，this.age表示model上的age的值",
+          "determine": "this.age > 10",
+          "#[*]": "[]表示选取当前数组的索引号；*代表任意索引；[*].name表示读取每一个book的name属性",
+          "validate": "[*].name",
+          "message": "书名必须填写"
+        },
+        {
+          "determine": "this.age > 10",
+          "validate": "[*].price > 0",
+          "message": "价格必须填写"
+        }
+      ]
+    },
+    "dog": {
+      "#Dog": "大写开头的表示前端自己定义，无需在json文件中声明",
+      "type": "Dog|null",
+      "default": null,
+      "rule": "ifexist",
+      "message": "dog必须是正确的格式",
+      "drop": "this.age < 10",
+      "#map": "表示输出的结果，这里直接写name表示dog.name，即返回它的name",
+      "map": "name",
+      "#flat": "另外你还可以用flat来将结果patch到外一层",
+      "#$": "$表示函数的传入参数，类似map, drop这些，都是函数，接收1个参数，即当前节点的值，catch接收的值为一个Error实例",
+      "catch": "alert($.message)"
+    },
+    "weight": {
+      "type": "number",
+      "default": 0,
+      "#compute": "这是一个计算属性，无法主动修改其值",
+      "compute": "this.age * 6",
+      "#+''": "json描述中的函数部分支持最简单的js表达式",
+      "getter": "$ + ''",
+      "setter": "+$"
+    }
+  },
+
+  "#view": "视图的配置",
+  "view": {
+    "#第一层": "表单整体的配置，不需要显示则不传",
+    "title": "表单标题",
+    "desc": "标题下方的描述",
+    "#groups": "组",
+    "groups": [
+      {
+        "#第二层": "一个组可以包含1个或多个字段",
+        "#title": "支持函数，可传入如：$.books.length，其中$表示模型，你可以理解为，整个模型被作为参数传入表单视图这个函数",
+        "title": "组名($.books.length)",
+        "desc": "组描述，根据实际的UI展示描述",
+        "#items": "该组的内容，即字段列表",
+        "items": [
+          {
+            "label": "label文本",
+            "name": "name",
+            "value": "$.name",
+            "#display": "显示结果，也是函数，和value不同，value实际上不显示出来，只是一个状态值，真正显示出来的是display，当然，display默认就是value",
+            "display": "$.name",
+            "#slot": "使用的Slot名称，所有的交互逻辑全部都被丢到Slot中去进行，甚至我们可以将展示效果也丢到Slot中，这种情况下，字段的view配置变成了Slot的参数被接收",
+            "slot": "TEXT",
+            "#required": "required会根据业务相关逻辑来进行判断",
+            "#:": "冒号开头的表示使用规则，规则在 logic 中定义",
+            "#:PROJECT_REQUIRED": ":PROJECT_REQUIRED表示使用logic.tables中对应的字段所给的表进行判断",
+            "required": ":PROJECT_REQUIRED",
+            "#:littleYang": ":littleYang用的是logic.rules中的对应规则",
+            "disabled": ":littleYang"
+          }
+        ]
+      },
+      {
+        "#slot": "group也可以直接使用slot，使用之后items无效",
+        "slot": "USER_GROUP"
+      }
+    ]
+  },
+
+  "#logic": "表单的业务逻辑，这个部分非常复杂，包含如下几个部分：tables, rules。其中，rules会在view中被使用",
+  "logic": {
+    "#alias": "定义别名，在tables中或者rules中，我们使用这些别名，但是我们不知道这些别名实际代表什么逻辑（即得到该值的逻辑），因此，我们要提前定义好",
+    "alias": {
+      "#": "这里的意思是 PROCESSING 在 tables 和 rules 被用，当 $.mode < 40 即表示 PROCESSING",
+      "PROCESSING": "$.mode < 40",
+      "FUND": "$.isFund"
+    },
+
+    "#tables": "在tables中定义好数据关系，后面直接通过读取数据关系就可以知道是否需要使用某个逻辑",
+    "tables": {
+      "PROJECT_REQUIRED": {
+        "PROCESSING": {
+          "#true": "节点上的true表示 PROJECT_STAGE 在 PROCESSING 这个阶段为必填",
+          "PROJECT_STAGE": true
+        }
+      }
+    },
+
+    "#rules": "不在tables中的规则，在rules中可以使用alias和tables中定义的结果",
+    "rules": {
+      "#直接使用model": "在规则中使用$来引用model",
+      "older": "$.age > 10",
+      "littleYang": "$.age < 5",
+
+      "#使用alias": "",
+      "useAlias": ":PROCESSING",
+
+      "#使用tables": "在 rules 中使用 tables 中的规则，使用&&表示逻辑和，后面表示从model上取值，当然，也可以直接写到alias中，这样可以直接调用:的方法",
+      "some": ":PROJECT_REQUIRED && $.user.polices.view_detail"
+    }
+  }
+}
