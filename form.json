@@ -24,7 +24,7 @@
         "def": {
           "uid": "number",
           "username": "string",
-          "policies": "dict"
+          "policies": "object"
         }
       }
     ],
@@ -47,13 +47,13 @@
       {
         "#": "第三步，将第一步得到的data restore到模型中",
         "type": "restore",
-        "#:data": "表示引用第一步输出的data",
-        "apply": [":data"]
+        "#$data": "表示引用第一步输出的data",
+        "apply": ["$data"]
       },
       {
         "#": "第四步，将第二步中得到的user set到模型上，注意，模型上必须声明user",
         "type": "set",
-        "apply": ["user", ":user"]
+        "apply": ["user", "$user"]
       }
     ]
   },
@@ -158,9 +158,9 @@
             "#slot": "使用的Slot名称，所有的交互逻辑全部都被丢到Slot中去进行，甚至我们可以将展示效果也丢到Slot中，这种情况下，字段的view配置变成了Slot的参数被接收",
             "slot": "TEXT",
             "#required": "required会根据业务相关逻辑来进行判断",
-            "#:": ":开头的表示使用在 logic 中定义的内容，:后面全部都是表达式，不需要再使用:表示",
-            "required": ":littleYang",
-            "disabled": ":someRule"
+            "#$": "$开头的表示变量，除了内置的特定变量外，会使用在 logic 中定义的变量",
+            "required": "$littleYang",
+            "disabled": "$someRule"
           }
         ]
       },
@@ -187,10 +187,15 @@
       }
     },
 
+    "#consts": "定义常量，和变量不同，常量只在初始化时赋值，赋值后就不会再重新计算值",
+    "consts": {
+      "PROJECT_STATUS": "$this.mode < 40 ? 'PROCESSING' : 'COMPLETED'"
+    },
+    
     "#vars": "定义变量，在特定场景下，需要提前定义变量，因为在执行 rules 时，不能直接使用 rules 中定义的规则值。注意，vars里面的变量，全部都是计算值，每次读取都会重新计算",
     "vars": {
-      "PROCESSING": "$this.mode < 40",
-      "PROJECT_STATUS": "$this.mode < 40 ? 'PROCESSING' : 'COMPLETED'"
+      "isProcessing": "$this.mode < 40"
+      
     },
 
     "#rules": "定义规则，所有规则返回的值都是 true 或 false。和vars一样，rules里面的变量每次读取都会重新计算",
@@ -200,7 +205,7 @@
       "littleYang": "$this.age < 5",
 
       "#使用变量": "直接给变量名即可，但是，这里的变量名只能是在vars或tables中定义的",
-      "processing": "PROCESSING || $this.mode === 40",
+      "processing": "isProcessing || $this.mode === 40",
 
       "#使用tables": "",
       "#[PROJECT_STATUS]": "在中括号中使用变量，表示动态读取对象上的某个属性",
