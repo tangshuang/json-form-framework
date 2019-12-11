@@ -2,7 +2,7 @@
   "#": "#开头的属性表示注释，不会在实际运行时运行。当然，如果后端输出，不应该输出这些内容，为了节省流量。",
   "#protocol": "协议层面的配置，对整个配置中的一些东西进行规定、约束",
   "protocol": {
-    "type": [
+    "types": [
       {
         "name": "book",
         "def": {
@@ -11,11 +11,13 @@
         }
       },
       {
-        "#Dog": "大写开头，必须是一个被实现的类的实例，这里强制规定Dog的部分属性",
+        "#Dog": "大写开头，表示这是一个特殊的 type",
         "name": "Dog",
         "def": {
           "name": "string"
-        }
+        },
+        "#interface": "必须是一个被实现的类的实例，这里强制规定Dog的部分属性",
+        interface: true
       },
       {
         "name": "user",
@@ -31,25 +33,27 @@
       {
         "#": "第一步，从url抓取数据",
         "type": "fetch",
-        "url": "/xxx",
+        "#apply": "相当于 fetch('/api/data')",
+        "apply": ["/api/data"],
         "#as": "将结果作为data这个变量保存",
         "as": "data"
       },
       {
         "#": "第二步，抓取用户信息，因为不依赖第一步的结果，所以和第一步同步进行",
         "type": "fetch",
-        "url": "/user",
+        "apply": ["/api/user"],
         "as": "user"
       },
       {
         "#": "第三步，将第一步得到的data restore到模型中",
         "type": "restore",
-        "$": "data"
+        "#:data": "表示引用第一步输出的data",
+        "apply": [":data"]
       },
       {
         "#": "第四步，将第二步中得到的user set到模型上，注意，模型上必须声明user",
         "type": "set",
-        "user": "user"
+        "apply": ["user", ":user"]
       }
     ]
   },
