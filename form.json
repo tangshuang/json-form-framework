@@ -109,6 +109,24 @@
       "#$value": "getter, setter函数的参数",
       "getter": "$value + ''",
       "setter": "+$value"
+    },
+    "#()": "()是子模型标识符，表示child本身就是一个模型",
+    "(child)": {
+      "borned": {
+        "type": "boolean",
+        "default": false,
+        "#$parent": "在子模型中调用$parent来获得父模型的引用，$this代表当前子模型的引用",
+        "compute": "$parent.age >= 24"
+      },
+      "name": {
+        "type": "string",
+        "default": ""
+      },
+      "age": {
+        "type": "int",
+        "default": 0,
+        "compute": "$parent.age - 24"
+      }
     }
   },
 
