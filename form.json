@@ -154,11 +154,9 @@
             "#slot": "使用的Slot名称，所有的交互逻辑全部都被丢到Slot中去进行，甚至我们可以将展示效果也丢到Slot中，这种情况下，字段的view配置变成了Slot的参数被接收",
             "slot": "TEXT",
             "#required": "required会根据业务相关逻辑来进行判断",
-            "#:": "冒号开头的表示使用规则，规则在 logic 中定义",
-            "#:PROJECT_REQUIRED": ":PROJECT_REQUIRED表示使用logic.tables中对应的字段所给的表进行判断",
-            "required": ":PROJECT_REQUIRED",
-            "#:littleYang": ":littleYang用的是logic.rules中的对应规则",
-            "disabled": ":littleYang"
+            "#:": ":开头的表示使用在 logic 中定义的内容，:后面全部都是表达式，不需要再使用:表示",
+            "required": ":littleYang",
+            "disabled": ":someRule"
           }
         ]
       },
@@ -173,36 +171,36 @@
     ]
   },
 
-  "#logic": "表单的业务逻辑，这个部分非常复杂，包含如下几个部分：tables, rules。其中，rules会在view中被使用",
+  "#logic": "表单的业务逻辑，这个部分非常复杂，包含如下几个部分：tables, rules，在view中被使用。它们本质上就是变量，用以在view中通过:开头来调用。",
   "logic": {
-    "#alias": "定义别名，在tables中或者rules中，我们使用这些别名，但是我们不知道这些别名实际代表什么逻辑（即得到该值的逻辑），因此，我们要提前定义好",
-    "alias": {
-      "#": "这里的意思是 PROCESSING 在 tables 和 rules 被用，当 $this.mode < 40 即表示 PROCESSING",
-      "PROCESSING": "$this.mode < 40",
-      "FUND": "$this.isFund"
-    },
-
     "#tables": "在tables中定义好数据关系，后面直接通过读取数据关系就可以知道是否需要使用某个逻辑",
     "tables": {
       "PROJECT_REQUIRED": {
         "PROCESSING": {
-          "#true": "节点上的true表示 PROJECT_STAGE 在 PROCESSING 这个阶段为必填",
+          "#true": "节点上的true表示 PROJECT_STAGE 在 PROCESSING 这个阶段为必填，仅允许true或false，不传undefined表示false",
           "PROJECT_STAGE": true
         }
       }
     },
 
-    "#rules": "不在tables中的规则，在rules中可以使用alias和tables中定义的结果",
+    "#vars": "定义变量，在特定场景下，需要提前定义变量，因为在执行 rules 时，不能直接使用 rules 中定义的规则值。注意，vars里面的变量，全部都是计算值，每次读取都会重新计算",
+    "vars": {
+      "PROCESSING": "$this.mode < 40",
+      "PROJECT_STATUS": "$this.mode < 40 ? 'PROCESSING' : 'COMPLETED'"
+    },
+
+    "#rules": "定义规则，所有规则返回的值都是 true 或 false。和vars一样，rules里面的变量每次读取都会重新计算",
     "rules": {
-      "#直接使用model": "在规则中使用$来引用model",
+      "#直接使用model": "在规则中使用$this来引用model",
       "older": "$this.age > 10",
       "littleYang": "$this.age < 5",
 
-      "#使用alias": "",
-      "useAlias": ":PROCESSING",
+      "#使用变量": "直接给变量名即可，但是，这里的变量名只能是在vars或tables中定义的",
+      "processing": "PROCESSING || $this.mode === 40",
 
-      "#使用tables": "在 rules 中使用 tables 中的规则，使用&&表示逻辑和，后面表示从model上取值，当然，也可以直接写到alias中，这样可以直接调用:的方法",
-      "some": ":PROJECT_REQUIRED && $this.user.polices.view_detail"
+      "#使用tables": "",
+      "#[PROJECT_STATUS]": "在中括号中使用变量，表示动态读取对象上的某个属性",
+      "someRule": "PROJECT_REQUIRED[PROJECT_STATUS].PROJECT_STAGE && $this.user.polices.view_detail"
     }
   }
 }
