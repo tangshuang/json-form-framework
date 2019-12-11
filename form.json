@@ -1,4 +1,5 @@
 {
+  "#": "#开头的属性表示注释，不会在实际运行时运行。当然，如果后端输出，不应该输出这些内容，为了节省流量。",
   "#protocol": "协议层面的配置，对整个配置中的一些东西进行规定、约束",
   "protocol": {
     "type": [
@@ -72,14 +73,15 @@
       "default": [],
       "validators": [
         {
-          "#$": "this表示当前model，this.age表示model上的age的值",
-          "determine": "this.age > 10",
-          "#[*]": "[]表示选取当前数组的索引号；*代表任意索引；[*].name表示读取每一个book的name属性",
+          "#$this": "$this表示当前model，$this.age表示model上的age的值",
+          "#$parent": "$parent表示当前model的父级model，因为我们可以在model中内嵌model，在单一体系内，可以通过$parent的方式读取，但是在顶级model中，$parent不存在",
+          "determine": "$this.age > 10",
+          "#[*]": "[]表示选取当前数组的索引号；*代表任意索引；[*].name表示读取每一个book的name属性，仅在model配置中有这种表示方法",
           "validate": "[*].name",
           "message": "书名必须填写"
         },
         {
-          "determine": "this.age > 10",
+          "determine": "$this.age > 10",
           "validate": "[*].price > 0",
           "message": "价格必须填写"
         }
@@ -91,21 +93,22 @@
       "default": null,
       "rule": "ifexist",
       "message": "dog必须是正确的格式",
-      "drop": "this.age < 10",
+      "drop": "$this.age < 10",
       "#map": "表示输出的结果，这里直接写name表示dog.name，即返回它的name",
       "map": "name",
       "#flat": "另外你还可以用flat来将结果patch到外一层",
-      "#$": "$表示函数的传入参数，类似map, drop这些，都是函数，接收1个参数，即当前节点的值，catch接收的值为一个Error实例",
-      "catch": "alert($.message)"
+      "#$error": "$error是catch这个函数接收的参数",
+      "catch": "alert($error.message)"
     },
     "weight": {
       "type": "number",
       "default": 0,
       "#compute": "这是一个计算属性，无法主动修改其值",
-      "compute": "this.age * 6",
+      "compute": "$this.age * 6",
       "#+''": "json描述中的函数部分支持最简单的js表达式",
-      "getter": "$ + ''",
-      "setter": "+$"
+      "#$value": "getter, setter函数的参数",
+      "getter": "$value + ''",
+      "setter": "+$value"
     }
   },
 
@@ -118,17 +121,18 @@
     "groups": [
       {
         "#第二层": "一个组可以包含1个或多个字段",
-        "#title": "支持函数，可传入如：$.books.length，其中$表示模型，你可以理解为，整个模型被作为参数传入表单视图这个函数",
-        "title": "组名($.books.length)",
+        "#title": "支持函数，可传入如：$this.books.length，其中$this表示模型，你可以理解为，整个模型被作为参数传入表单视图这个函数",
+        "#{}": "在字符串内容中使用{}作为插值标识符，所有的字符串类型都可以用",
+        "title": "组名 {$this.books.length}",
         "desc": "组描述，根据实际的UI展示描述",
         "#items": "该组的内容，即字段列表",
         "items": [
           {
             "label": "label文本",
             "name": "name",
-            "value": "$.name",
+            "value": "$this.name",
             "#display": "显示结果，也是函数，和value不同，value实际上不显示出来，只是一个状态值，真正显示出来的是display，当然，display默认就是value",
-            "display": "$.name",
+            "display": "$this.name",
             "#slot": "使用的Slot名称，所有的交互逻辑全部都被丢到Slot中去进行，甚至我们可以将展示效果也丢到Slot中，这种情况下，字段的view配置变成了Slot的参数被接收",
             "slot": "TEXT",
             "#required": "required会根据业务相关逻辑来进行判断",
@@ -141,8 +145,12 @@
         ]
       },
       {
+        "title": "组标题",
         "#slot": "group也可以直接使用slot，使用之后items无效",
-        "slot": "USER_GROUP"
+        "#[]": "使用数组作为slot的值，第一个元素表示slot的name，第二个元素表示传入slot的额外信息",
+        "slot": ["USER_GROUP", {
+          "filter": "empty"
+        }]
       }
     ]
   },
@@ -151,9 +159,9 @@
   "logic": {
     "#alias": "定义别名，在tables中或者rules中，我们使用这些别名，但是我们不知道这些别名实际代表什么逻辑（即得到该值的逻辑），因此，我们要提前定义好",
     "alias": {
-      "#": "这里的意思是 PROCESSING 在 tables 和 rules 被用，当 $.mode < 40 即表示 PROCESSING",
-      "PROCESSING": "$.mode < 40",
-      "FUND": "$.isFund"
+      "#": "这里的意思是 PROCESSING 在 tables 和 rules 被用，当 $this.mode < 40 即表示 PROCESSING",
+      "PROCESSING": "$this.mode < 40",
+      "FUND": "$this.isFund"
     },
 
     "#tables": "在tables中定义好数据关系，后面直接通过读取数据关系就可以知道是否需要使用某个逻辑",
@@ -169,14 +177,14 @@
     "#rules": "不在tables中的规则，在rules中可以使用alias和tables中定义的结果",
     "rules": {
       "#直接使用model": "在规则中使用$来引用model",
-      "older": "$.age > 10",
-      "littleYang": "$.age < 5",
+      "older": "$this.age > 10",
+      "littleYang": "$this.age < 5",
 
       "#使用alias": "",
       "useAlias": ":PROCESSING",
 
       "#使用tables": "在 rules 中使用 tables 中的规则，使用&&表示逻辑和，后面表示从model上取值，当然，也可以直接写到alias中，这样可以直接调用:的方法",
-      "some": ":PROJECT_REQUIRED && $.user.polices.view_detail"
+      "some": ":PROJECT_REQUIRED && $this.user.polices.view_detail"
     }
   }
 }
