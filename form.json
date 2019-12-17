@@ -11,7 +11,7 @@
         }
       },
       {
-        "#Dog": "大写开头，表示这是一个特殊的 type",
+        "#Dog": "大写开头，表示这是一个特殊的 type，但实际编程中没有任何限制，也可以用小写",
         "name": "Dog",
         "def": {
           "name": "string"
@@ -77,7 +77,7 @@
       "default": [],
       "validators": [
         {
-          "#$this": "$this表示当前model，$this.age表示model上的age的值",
+          "#$this": "$this表示当前model，实际指向model的state属性，$this.age表示model上的age的值",
           "#$parent": "$parent表示当前model的父级model，因为我们可以在model中内嵌model，在单一体系内，可以通过$parent的方式读取，但是在顶级model中，$parent不存在",
           "determine": "$this.age > 10",
           "#[*]": "[]表示选取当前数组的索引号；*代表任意索引；[*].name表示读取每一个book的name属性，仅在model配置中有这种表示方法",
@@ -124,12 +124,15 @@
       },
       "name": {
         "type": "string",
-        "default": ""
+        "default": "",
+        "required": true
       },
       "age": {
         "type": "int",
         "default": 0,
-        "compute": "$parent.age - 24"
+        "compute": "$parent.age - 24",
+        "disabled": "$parent.age < 10",
+        "readonly": "$parent.age < 20"
       }
     }
   },
